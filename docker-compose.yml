@@ -1,0 +1,30 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        EMBED_MODEL: ${RAG_EMBED_MODEL:-BAAI/bge-small-en-v1.5}
+    image: agentic-rag:latest
+    container_name: agentic-rag
+    ports:
+      - "${RAG_PORT:-8000}:8000"
+    environment:
+      # Optional. Unset -> the service returns extractive answers.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      RAG_LLM_MODEL: ${RAG_LLM_MODEL:-claude-opus-5}
+      RAG_LLM_EFFORT: ${RAG_LLM_EFFORT:-low}
+      RAG_EMBED_MODEL: ${RAG_EMBED_MODEL:-BAAI/bge-small-en-v1.5}
+      RAG_EMBED_BACKEND: ${RAG_EMBED_BACKEND:-onnx_quantized}
+      RAG_HNSW_EF_SEARCH: ${RAG_HNSW_EF_SEARCH:-64}
+      RAG_TOP_K: ${RAG_TOP_K:-5}
+      RAG_LOG_LEVEL: ${RAG_LOG_LEVEL:-INFO}
+    volumes:
+      # Vector store survives container restarts.
+      - rag-data:/app/data
+      # Drop documents here, then: POST /ingest {"path": "/corpus"}
+      - ./data/docs:/corpus:ro
+    restart: unless-stopped
+
+volumes:
+  rag-data:

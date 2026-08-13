@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentic-rag"
+version = "0.1.0"
+description = "Production-ready agentic RAG service: LangChain + ChromaDB + FastAPI, with a measured embedding-latency benchmark."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "python-multipart>=0.0.9",
+    "chromadb>=0.5.5",
+    "langchain-core>=0.3",
+    "langchain-text-splitters>=0.3",
+    "fastembed>=0.4",
+    "pypdf>=4.2",
+    "anthropic>=0.40",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+# The torch/sentence-transformers baseline. Only needed to reproduce the
+# "before" number in the latency benchmark -- the service itself never uses it.
+baseline = ["sentence-transformers>=3.0"]
+dev = ["pytest>=8.2", "pytest-asyncio>=0.23", "httpx>=0.27", "ruff>=0.5"]
+
+[project.scripts]
+agentic-rag-ingest = "scripts.ingest:main"
+
+[tool.setuptools.packages.find]
+include = ["app*", "scripts*", "bench*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "PL"]
+ignore = [
+    # FastAPI's dependency-injection idiom is a function call in a default
+    # argument by design: `state: AppState = Depends(get_state)`.
+    "B008",
+    "PLR0913",  # several constructors legitimately take many tuned parameters
+    "PLR0917",  # ditto, for positional count
+    "PLR2004",  # magic values in tests are the point of the test
+    # Heavy/optional dependencies (torch, fastembed, anthropic, pypdf) are
+    # imported inside the functions that need them, so an unused backend is
+    # never paid for at import time.
+    "PLC0415",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["PLR2004", "SIM117"]

@@ -1,0 +1,14 @@
+# Pinned runtime dependencies for the Docker image.
+# For local development prefer:  pip install -e ".[dev]"
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+pydantic-settings>=2.3
+python-multipart>=0.0.9
+chromadb>=0.5.5
+langchain-core>=0.3
+langchain-text-splitters>=0.3
+fastembed>=0.4
+pypdf>=4.2
+anthropic>=0.40
+python-dotenv>=1.0

@@ -15,6 +15,7 @@ same queries against both, and reports the p50/p95/p99 difference.
 
 ## Contents
 
+- [See it working](#see-it-working)
 - [Architecture](#architecture)
 - [Quickstart](#quickstart)
 - [Using a Kaggle dataset](#using-a-kaggle-dataset)
@@ -24,6 +25,33 @@ same queries against both, and reports the p50/p95/p99 difference.
 - [Docker](#docker)
 - [Testing](#testing)
 - [Design notes](#design-notes)
+
+---
+
+## See it working
+
+Two commands, no API key:
+
+```bash
+docker compose up -d      # or: make install && make ingest && make run
+make demo-docker          # or, for a local server: make demo
+```
+
+`make demo` walks the whole system and prints what each step proves — ingestion
+and its idempotency, a grounded answer with citations, a two-part question being
+decomposed and its results fused, a per-stage latency breakdown, and the query
+cache. Every number it prints is measured live from the running service.
+
+The cache step is the one worth watching:
+
+```
+    run 1  embed   5.34 ms   total   13.67 ms   cold (model runs)
+    run 2  embed   0.00 ms   total    2.33 ms   warm (cache hit)
+    run 3  embed   0.00 ms   total    1.97 ms   warm (cache hit)
+```
+
+For a browser instead, open **[http://localhost:8000/docs](http://localhost:8000/docs)**
+and hit **Try it out** on any endpoint.
 
 ---
 

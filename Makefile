@@ -30,6 +30,12 @@ run: ## Start the API on :8000 with reload
 ingest: ## Ingest $(CORPUS) into the vector store
 	$(BIN)/python -m scripts.ingest $(CORPUS)
 
+demo: ## Narrated end-to-end demo against a running service
+	$(BIN)/python -m scripts.demo --corpus $(CORPUS)
+
+demo-docker: ## Same demo, against the container (corpus mounted at /corpus)
+	$(BIN)/python -m scripts.demo --corpus /corpus
+
 bench: ## Run the latency benchmark against $(CORPUS)
 	$(BIN)/python -m bench.benchmark --corpus $(CORPUS)
 

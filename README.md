@@ -311,9 +311,9 @@ curl localhost:8000/health
 ```
 
 The image bakes the embedding model in at build time, so the container starts
-without network access and the first request isn't slowed by a download. The
-vector store lives in a named volume and survives restarts; `./data/docs` is
-mounted read-only at `/corpus`:
+without network access and the first request isn't slowed by a download —
+startup to ready is under a second. The vector store lives in a named volume
+and survives restarts; `./data/docs` is mounted read-only at `/corpus`:
 
 ```bash
 curl -s localhost:8000/ingest \
@@ -321,7 +321,17 @@ curl -s localhost:8000/ingest \
   -d '{"path": "/corpus", "source_tag": "my-dataset"}'
 ```
 
-Runs as a non-root user (uid 10001) with a `HEALTHCHECK` on `/health`.
+Runs as a non-root user (uid 10001) with a `HEALTHCHECK` on `/health`. Image is
+~1.2 GB, dominated by ONNX Runtime, ChromaDB, and the baked-in model.
+
+> **Don't benchmark inside the container on Apple Silicon.** Docker Desktop runs
+> a linux/aarch64 VM, and ONNX Runtime logs `Unknown CPU vendor` there — it
+> can't detect CPU features, so it falls back to unoptimised kernels. Measured
+> query latency is roughly 4× native as a result (≈57 ms vs ≈4 ms to embed).
+> That's a virtualisation artefact, not a property of the service. Run
+> `bench/benchmark.py` natively; use the container for deployment.
+
+Tear down with `docker compose down` (add `-v` to drop the vector store too).
 
 ---
 

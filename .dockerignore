@@ -1,0 +1,31 @@
+# Keep the build context small. Without this the ~2 GB .venv (torch) and the
+# local vector store get uploaded to the daemon on every build.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Runtime artifacts -- the image builds its own store under /app/data.
+data/
+chroma/
+.chroma/
+bench/results/
+
+.env
+.env.local
+
+.git/
+.gitignore
+.github/
+
+.pytest_cache/
+.ruff_cache/
+tests/
+Makefile
+README.md
+docker-compose.yml
+Dockerfile
+.DS_Store

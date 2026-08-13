@@ -24,6 +24,17 @@ class IngestResult:
     elapsed_ms: float = 0.0
 
 
+def _relabel_sources(documents: list, file_path: Path, root: Path) -> None:
+    """Rewrite ``source`` metadata to be relative to ``root``, in place."""
+    try:
+        relative = str(file_path.resolve().relative_to(root))
+    except ValueError:
+        # Outside the root -- keep the filename rather than an unrelated path.
+        relative = file_path.name
+    for document in documents:
+        document.metadata["source"] = relative
+
+
 def ingest_path(
     path: str | Path,
     store: VectorStore,
@@ -32,11 +43,16 @@ def ingest_path(
     recursive: bool = True,
     source_tag: str | None = None,
     batch_size: int = 256,
+    source_root: str | Path | None = None,
 ) -> IngestResult:
     """Ingest a file or directory into ``store``.
 
     Chunk IDs are content hashes, so re-ingesting an unchanged corpus is a
     no-op upsert rather than a duplication.
+
+    ``source_root`` rewrites each chunk's ``source`` metadata to be relative to
+    that directory. Uploads need it: without it, citations would record the
+    temporary staging path, which is deleted the moment the request finishes.
     """
     started = time.perf_counter()
     result = IngestResult()
@@ -51,10 +67,15 @@ def ingest_path(
     pending: list[Chunk] = []
     seen_ids: set[str] = set()
 
+    root = Path(source_root).expanduser().resolve() if source_root else None
+
     for file_path, documents in iter_documents(files):
         if not documents:
             result.files_skipped.append(str(file_path))
             continue
+
+        if root is not None:
+            _relabel_sources(documents, file_path, root)
 
         chunks = chunk_documents(
             documents,

@@ -14,6 +14,18 @@ from app.retrieval.store import SearchHit
 # --------------------------------------------------------------------------
 # Ops endpoints
 # --------------------------------------------------------------------------
+def test_root_redirects_to_docs(client):
+    # A bare host in a browser must not look like a dead service.
+    response = client.get("/", follow_redirects=False)
+    assert response.status_code in (307, 308)
+    assert response.headers["location"] == "/docs"
+
+
+def test_docs_are_served(client):
+    assert client.get("/docs").status_code == 200
+    assert client.get("/openapi.json").status_code == 200
+
+
 def test_health_is_ok_on_a_cold_index(client):
     response = client.get("/health")
     assert response.status_code == 200
@@ -92,6 +104,24 @@ def test_ingest_upload_accepts_files(client):
     response = client.post("/ingest/upload", files=files)
     assert response.status_code == 200
     assert response.json()["chunks_written"] >= 1
+
+
+def test_upload_cites_the_filename_not_the_staging_path(client):
+    # The staging directory is deleted when the request ends, so a citation
+    # pointing at it would reference a path that no longer exists.
+    client.post(
+        "/ingest/upload",
+        files=_upload(
+            "genetics.txt",
+            b"A codon is a sequence of three nucleotides that together specify "
+            b"a single amino acid during protein synthesis.",
+        ),
+    )
+    citations = client.post("/query", json={"question": "what is a codon?"}).json()["citations"]
+    assert citations
+    sources = {c["source"] for c in citations}
+    assert "genetics.txt" in sources
+    assert not any(s.startswith("/") or "rag-upload" in s for s in sources)
 
 
 def test_upload_strips_directory_traversal(client):

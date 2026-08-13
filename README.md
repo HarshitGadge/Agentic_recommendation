@@ -86,8 +86,11 @@ mkdir -p data/docs
 cp ~/Downloads/whatever.csv data/docs/
 
 make ingest           # or: python -m scripts.ingest ./data/docs
-make run              # http://localhost:8000/docs
+make run
 ```
+
+Now open **[http://localhost:8000/docs](http://localhost:8000/docs)** — Swagger UI,
+where you can run every endpoint from the browser without touching curl.
 
 Ask it something:
 
@@ -148,10 +151,13 @@ them.
 
 ## API
 
-Interactive docs at `/docs`. All endpoints return an `x-request-id` header.
+**Open [http://localhost:8000/docs](http://localhost:8000/docs)** for interactive
+Swagger UI where you can run every endpoint from the browser. The bare host
+redirects there. All endpoints return an `x-request-id` header.
 
 | Method | Path             | Purpose |
 |--------|------------------|---------|
+| `GET`  | `/`              | Redirects to `/docs` |
 | `GET`  | `/health`        | Liveness + component checks |
 | `GET`  | `/stats`         | Chunk count, sources, model and backend in use |
 | `GET`  | `/metrics`       | Per-stage latency percentiles, cache hit rate |
@@ -307,8 +313,9 @@ Copy `.env.example` to `.env`. Every setting is an environment variable prefixed
 
 ```bash
 docker compose up -d --build
-curl localhost:8000/health
 ```
+
+Then open **[http://localhost:8000/docs](http://localhost:8000/docs)**.
 
 The image bakes the embedding model in at build time, so the container starts
 without network access and the first request isn't slowed by a download —

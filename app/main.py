@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from app import __version__
 from app.agents.orchestrator import RetrievalAgent
@@ -153,6 +153,16 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 # --------------------------------------------------------------------------
 # Health / introspection
 # --------------------------------------------------------------------------
+@app.get("/", include_in_schema=False)
+def root() -> RedirectResponse:
+    """Send browsers to the interactive docs.
+
+    Without this, typing the bare host in a browser returns a bare 404 and the
+    service looks dead when it is actually fine.
+    """
+    return RedirectResponse(url="/docs")
+
+
 @app.get("/health", response_model=HealthResponse, tags=["ops"])
 def health(state: AppState = Depends(get_state)) -> HealthResponse:
     checks: dict[str, str] = {}
@@ -244,6 +254,9 @@ async def ingest_upload(
             chunk_overlap=state.settings.chunk_overlap,
             recursive=False,
             source_tag=source_tag,
+            # Cite the uploaded filename, not the staging directory -- that
+            # path is deleted in the `finally` below.
+            source_root=staging,
         )
     finally:
         shutil.rmtree(staging, ignore_errors=True)

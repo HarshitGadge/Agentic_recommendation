@@ -1,5 +1,7 @@
 # Agentic RAG Service
 
+[![tests](https://github.com/HarshitGadge/Agentic_recommendation/actions/workflows/tests.yml/badge.svg)](https://github.com/HarshitGadge/Agentic_recommendation/actions/workflows/tests.yml)
+
 A retrieval-augmented generation service you can point at a folder of documents
 and query over HTTP. LangChain does the chunking, ChromaDB stores and searches
 the vectors, an adaptive retrieval agent decides how hard to look, and answers

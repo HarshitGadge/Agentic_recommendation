@@ -1,0 +1,125 @@
+{
+  "dataset": "scifact",
+  "documents": 5183,
+  "chunks": 17332,
+  "queries": 300,
+  "model": "BAAI/bge-small-en-v1.5",
+  "backend": "onnx_optimized",
+  "top_k": 10,
+  "candidate_k": 50,
+  "configs": [
+    {
+      "config": "vector",
+      "ndcg@10": 0.7274,
+      "recall@10": 0.8437,
+      "mrr@10": 0.6963,
+      "recall@100": 0.94,
+      "latency_p50_ms": 17.89,
+      "latency_p95_ms": 25.15
+    },
+    {
+      "config": "BM25 keyword",
+      "ndcg@10": 0.6104,
+      "recall@10": 0.7342,
+      "mrr@10": 0.5767,
+      "recall@100": 0.8684,
+      "latency_p50_ms": 2.01,
+      "latency_p95_ms": 4.85
+    },
+    {
+      "config": "hybrid, BM25 weight 1.0",
+      "ndcg@10": 0.6999,
+      "recall@10": 0.8353,
+      "mrr@10": 0.6618,
+      "recall@100": 0.9593,
+      "latency_p50_ms": 40.41,
+      "latency_p95_ms": 50.1
+    },
+    {
+      "config": "hybrid, BM25 weight 0.5",
+      "ndcg@10": 0.7102,
+      "recall@10": 0.8353,
+      "mrr@10": 0.6752,
+      "recall@100": 0.9617,
+      "latency_p50_ms": 40.38,
+      "latency_p95_ms": 52.17
+    },
+    {
+      "config": "service, previous defaults (MMR 0.5)",
+      "ndcg@10": 0.6634,
+      "recall@10": 0.7339,
+      "mrr@10": 0.6585,
+      "recall@100": null,
+      "latency_p50_ms": 22.11,
+      "latency_p95_ms": 28.54
+    },
+    {
+      "config": "service, new defaults (no MMR)",
+      "ndcg@10": 0.713,
+      "recall@10": 0.8061,
+      "mrr@10": 0.6896,
+      "recall@100": null,
+      "latency_p50_ms": 21.96,
+      "latency_p95_ms": 27.94
+    },
+    {
+      "config": "service, hybrid on (BM25 weight 0.5)",
+      "ndcg@10": 0.6969,
+      "recall@10": 0.8011,
+      "mrr@10": 0.6704,
+      "recall@100": null,
+      "latency_p50_ms": 29.03,
+      "latency_p95_ms": 39.21
+    }
+  ],
+  "comparisons": {
+    "new vs previous service defaults": {
+      "metric": "ndcg@10",
+      "diff": 0.0496,
+      "ci95": [
+        0.0313,
+        0.0691
+      ]
+    },
+    "hybrid (weight 0.5) vs vector": {
+      "metric": "ndcg@10",
+      "diff": -0.0172,
+      "ci95": [
+        -0.0387,
+        0.0037
+      ]
+    },
+    "hybrid on vs off in the service": {
+      "metric": "ndcg@10",
+      "diff": -0.0162,
+      "ci95": [
+        -0.0388,
+        0.0052
+      ]
+    }
+  },
+  "model_comparison": {
+    "served": {
+      "config": "vector top-k [served]",
+      "ndcg@10": 0.7274,
+      "recall@10": 0.8437,
+      "mrr@10": 0.6963,
+      "recall@100": 0.94,
+      "latency_p50_ms": 17.48,
+      "latency_p95_ms": 23.98,
+      "query_embed_p50_ms": 7.72,
+      "query_embed_p95_ms": 12.96
+    },
+    "compare": {
+      "config": "vector top-k [compare]",
+      "ndcg@10": 0.7279,
+      "recall@10": 0.8437,
+      "mrr@10": 0.6968,
+      "recall@100": 0.9367,
+      "latency_p50_ms": 20.81,
+      "latency_p95_ms": 29.36,
+      "query_embed_p50_ms": 8.46,
+      "query_embed_p95_ms": 13.92
+    }
+  }
+}

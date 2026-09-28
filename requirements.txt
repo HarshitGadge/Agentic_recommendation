@@ -9,6 +9,7 @@ chromadb>=0.5.5
 langchain-core>=0.3
 langchain-text-splitters>=0.3
 fastembed>=0.4
+numpy>=1.26
 pypdf>=4.2
 anthropic>=0.40
 python-dotenv>=1.0

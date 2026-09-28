@@ -26,7 +26,8 @@ class Settings(BaseSettings):
 
     # --- Embeddings ---
     embed_model: str = "BAAI/bge-small-en-v1.5"
-    embed_backend: str = "onnx_quantized"
+    embed_backend: str = "onnx_optimized"
+    embed_model_path: str = ""  # local model directory; empty = download from the Hub
     embed_batch_size: int = 64
     embed_cache_size: int = 1024
 
@@ -45,8 +46,16 @@ class Settings(BaseSettings):
     # --- Retrieval ---
     top_k: int = 5
     candidate_k: int = 20
-    mmr_lambda: float = 0.5
+    # 1.0 = MMR off (pure relevance). On SciFact, MMR at 0.5 cost 4.9 points of
+    # nDCG@10 (eval/results/scifact.json), so diversification is opt-in.
+    mmr_lambda: float = 1.0
     max_subqueries: int = 3
+    # Fuse BM25 keyword search with vector search. Off by default: on SciFact it raised
+    # recall@100 but not the top-10 ranking. Turn it on for corpora full of exact
+    # identifiers (part numbers, error codes, gene names) that embeddings blur.
+    hybrid_search: bool = False
+    keyword_weight: float = 0.5  # BM25's weight in the rank fusion (vector list = 1.0)
+    rrf_k: int = 60
 
     # --- Service ---
     host: str = "0.0.0.0"
@@ -56,7 +65,7 @@ class Settings(BaseSettings):
     @field_validator("embed_backend")
     @classmethod
     def _valid_backend(cls, v: str) -> str:
-        allowed = {"onnx_quantized", "sentence_transformers"}
+        allowed = {"onnx_optimized", "onnx_quantized", "sentence_transformers"}
         if v not in allowed:
             raise ValueError(f"embed_backend must be one of {sorted(allowed)}, got {v!r}")
         return v

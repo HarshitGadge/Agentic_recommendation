@@ -7,10 +7,16 @@ benchmark in ``bench/benchmark.py`` an apples-to-apples comparison:
     The baseline. Runs the model through PyTorch in fp32. This is the
     conventional way to serve a Hugging Face embedding model.
 
-``onnx_quantized``
-    The optimisation. Runs the *same* model architecture through ONNX Runtime
-    with int8-quantised weights (via ``fastembed``). Same vector space, same
-    retrieval quality in practice, materially less CPU work per call.
+``onnx_optimized``
+    The optimisation. Runs the same model through ONNX Runtime via ``fastembed``.
+    For ``BAAI/bge-small-en-v1.5`` fastembed ships a graph-optimised export
+    (fused attention, GELU and layer-norm kernels) with fp16 weights. It is *not*
+    int8-quantised, despite the repository name ``Qdrant/bge-small-en-v1.5-onnx-Q``:
+    its ``ort_config.json`` has an empty quantization block and every weight tensor
+    is FLOAT16. Its vectors match the fp32 model's to a cosine similarity of
+    0.99999, and ``eval/retrieval_eval.py`` shows identical retrieval quality.
+
+    ``onnx_quantized`` is accepted as a deprecated alias for backwards compatibility.
 
 A small LRU cache sits in front of query embedding, because repeated and
 near-repeated queries are the norm in a served system and re-encoding them is
@@ -56,17 +62,28 @@ class Embedder(ABC):
         self.embed_query("warmup")
 
 
-class OnnxQuantizedEmbedder(Embedder):
-    """int8-quantised ONNX Runtime backend (fastembed). The served default."""
+class OnnxEmbedder(Embedder):
+    """Graph-optimised ONNX Runtime backend (fastembed). The served default.
 
-    name = "onnx_quantized"
+    ``model_path`` points fastembed at a local model directory instead of the
+    Hugging Face Hub, for offline or air-gapped deployments.
+    """
 
-    def __init__(self, model_name: str, batch_size: int = 64, threads: int | None = None):
+    name = "onnx_optimized"
+
+    def __init__(
+        self,
+        model_name: str,
+        batch_size: int = 64,
+        threads: int | None = None,
+        model_path: str | None = None,
+    ):
         from fastembed import TextEmbedding
 
         self.model_name = model_name
         self.batch_size = batch_size
-        self._model = TextEmbedding(model_name=model_name, threads=threads)
+        kwargs = {"specific_model_path": model_path} if model_path else {}
+        self._model = TextEmbedding(model_name=model_name, threads=threads, **kwargs)
         self._dimension: int | None = None
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
@@ -198,15 +215,27 @@ class CachedEmbedder(Embedder):
         }
 
 
+# Kept so existing imports keep working after the rename.
+OnnxQuantizedEmbedder = OnnxEmbedder
+
+ONNX_BACKENDS = {"onnx_optimized", "onnx_quantized"}  # the second is a deprecated alias
+
+
 def build_embedder(
     backend: str,
     model_name: str,
     batch_size: int = 64,
     cache_size: int = 1024,
+    model_path: str | None = None,
 ) -> Embedder:
     """Construct the configured backend, optionally wrapped in a query cache."""
-    if backend == "onnx_quantized":
-        embedder: Embedder = OnnxQuantizedEmbedder(model_name, batch_size=batch_size)
+    if backend in ONNX_BACKENDS:
+        if backend == "onnx_quantized":
+            logger.warning(
+                "RAG_EMBED_BACKEND=onnx_quantized is deprecated (the model is fp16 and "
+                "graph-optimised, not int8); use onnx_optimized"
+            )
+        embedder: Embedder = OnnxEmbedder(model_name, batch_size=batch_size, model_path=model_path)
     elif backend == "sentence_transformers":
         embedder = SentenceTransformerEmbedder(model_name, batch_size=batch_size)
     else:

@@ -18,6 +18,7 @@ from chromadb.config import Settings as ChromaSettings
 
 from app.ingest.chunker import Chunk
 from app.retrieval.embeddings import Embedder
+from app.retrieval.lexical import BM25Index
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +28,11 @@ class SearchHit:
     chunk_id: str
     text: str
     metadata: dict[str, Any]
-    score: float  # cosine similarity in [0, 1]; higher is better
+    score: float  # cosine similarity to the query in [0, 1]; higher is better
     embedding: list[float] | None = None
+    # Set when several ranked lists were merged (sub-queries, or vector + keyword):
+    # the reciprocal-rank-fusion score that decides the merged order.
+    fused_score: float | None = None
 
     @property
     def source(self) -> str:
@@ -36,7 +40,12 @@ class SearchHit:
 
 
 class VectorStore:
-    """Thin wrapper over a persistent Chroma collection."""
+    """Thin wrapper over a persistent Chroma collection.
+
+    With ``lexical=True`` it also keeps an in-memory BM25 index of the same chunks,
+    rebuilt from Chroma at startup and updated on every upsert, so hybrid search
+    never sees the two indexes disagree about what is stored.
+    """
 
     def __init__(
         self,
@@ -46,6 +55,7 @@ class VectorStore:
         hnsw_m: int = 16,
         hnsw_ef_construction: int = 200,
         hnsw_ef_search: int = 64,
+        lexical: bool = False,
     ):
         self.embedder = embedder
         self.collection_name = collection_name
@@ -67,6 +77,28 @@ class VectorStore:
             "hnsw:search_ef": hnsw_ef_search,
         }
         self._collection = self._get_or_create()
+
+        self.lexical: BM25Index | None = BM25Index() if lexical else None
+        if self.lexical is not None:
+            self._rebuild_lexical()
+
+    def _rebuild_lexical(self, page_size: int = 5_000) -> None:
+        """Load every stored chunk into the BM25 index (startup, or after a reset)."""
+        if self.lexical is None:
+            return
+        self.lexical.clear()
+        total = self.count()
+        for offset in range(0, total, page_size):
+            page = self._collection.get(
+                limit=page_size, offset=offset, include=["documents", "metadatas"]
+            )
+            self.lexical.add(
+                [str(i) for i in page.get("ids") or []],
+                list(page.get("documents") or []),
+                [dict(m or {}) for m in page.get("metadatas") or []],
+            )
+        if total:
+            logger.info("BM25 index rebuilt over %d chunks", total)
 
     def _get_or_create(self):
         try:
@@ -95,6 +127,12 @@ class VectorStore:
             documents=[c.text for c in chunks],
             metadatas=[c.metadata or {"source": "unknown"} for c in chunks],
         )
+        if self.lexical is not None:
+            self.lexical.add(
+                [c.id for c in chunks],
+                [c.text for c in chunks],
+                [c.metadata or {"source": "unknown"} for c in chunks],
+            )
         return len(chunks)
 
     def reset(self) -> None:
@@ -102,6 +140,8 @@ class VectorStore:
         with contextlib.suppress(Exception):  # collection may not exist yet
             self._client.delete_collection(self.collection_name)
         self._collection = self._get_or_create()
+        if self.lexical is not None:
+            self.lexical.clear()
 
     # ------------------------------------------------------------------
     # Reads
@@ -128,6 +168,45 @@ class VectorStore:
             include=include,
         )
         return self._to_hits(result, include_embeddings=include_embeddings)
+
+    def search_lexical(
+        self,
+        query: str,
+        k: int,
+        where: dict[str, Any] | None = None,
+        include_embeddings: bool = False,
+    ) -> list[SearchHit]:
+        """BM25 keyword search. Scores are raw BM25 (not comparable to cosine)."""
+        if self.lexical is None:
+            return []
+        ranked = self.lexical.search(query, k=k, where=where)
+        if not ranked:
+            return []
+        vectors: dict[str, list[float]] = {}
+        if include_embeddings:
+            # MMR needs vectors; fetch them for the keyword hits in one call.
+            fetched = self._collection.get(
+                ids=[doc_id for doc_id, _ in ranked], include=["embeddings"]
+            )
+            embeddings = fetched.get("embeddings")
+            if embeddings is None:  # Chroma returns a numpy array, so no `or []` here
+                embeddings = []
+            for doc_id, vector in zip(fetched.get("ids") or [], embeddings, strict=False):
+                if vector is not None:
+                    vectors[str(doc_id)] = list(vector)
+        hits = []
+        for doc_id, score in ranked:
+            text, metadata = self.lexical.document(doc_id)
+            hits.append(
+                SearchHit(
+                    chunk_id=doc_id,
+                    text=text,
+                    metadata=dict(metadata),
+                    score=round(float(score), 6),
+                    embedding=vectors.get(doc_id),
+                )
+            )
+        return hits
 
     def search(
         self,

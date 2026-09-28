@@ -21,3 +21,6 @@ bench/results/*.json
 .pytest_cache/
 .ruff_cache/
 .DS_Store
+
+# Evaluation data (downloaded by eval/download_scifact.py); results are committed
+eval/data/

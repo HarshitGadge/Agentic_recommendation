@@ -1,4 +1,4 @@
-"""Latency benchmark: PyTorch fp32 baseline vs quantised-ONNX optimised path.
+"""Latency benchmark: PyTorch fp32 baseline vs the graph-optimised ONNX Runtime path.
 
 This exists so the performance claim about this project is a *measurement*
 rather than an assertion. It builds a separate index per backend over the same
@@ -305,7 +305,7 @@ def main(argv: list[str] | None = None) -> int:
 
         results.append(
             benchmark_backend(
-                "onnx_quantized", args.model, chunks, queries,
+                "onnx_optimized", args.model, chunks, queries,
                 args.runs, args.warmup, args.ef_search, args.cache_size, store_root,
             )
         )
@@ -322,9 +322,9 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     by_name = {r.backend: r for r in results}
-    if "sentence_transformers" in by_name and "onnx_quantized" in by_name:
+    if "sentence_transformers" in by_name and "onnx_optimized" in by_name:
         payload["reduction_pct"] = print_comparison(
-            by_name["sentence_transformers"], by_name["onnx_quantized"]
+            by_name["sentence_transformers"], by_name["onnx_optimized"]
         )
     else:
         print("\nOnly one backend profiled -- no comparison. "

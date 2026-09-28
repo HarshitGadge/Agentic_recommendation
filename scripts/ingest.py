@@ -39,6 +39,7 @@ def main(argv: list[str] | None = None) -> int:
         model_name=settings.embed_model,
         batch_size=settings.embed_batch_size,
         cache_size=0,  # ingestion never re-embeds the same query
+        model_path=settings.embed_model_path or None,
     )
     store = VectorStore(
         embedder=embedder,

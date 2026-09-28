@@ -58,6 +58,7 @@ def build_state(settings: Settings) -> AppState:
         model_name=settings.embed_model,
         batch_size=settings.embed_batch_size,
         cache_size=settings.embed_cache_size,
+        model_path=settings.embed_model_path or None,
     )
     # Load the model and initialise the compute graph before serving, so the
     # first real request doesn't pay for it.
@@ -70,12 +71,16 @@ def build_state(settings: Settings) -> AppState:
         hnsw_m=settings.hnsw_m,
         hnsw_ef_construction=settings.hnsw_ef_construction,
         hnsw_ef_search=settings.hnsw_ef_search,
+        lexical=settings.hybrid_search,
     )
     retriever = Retriever(
         store=store,
         top_k=settings.top_k,
         candidate_k=settings.candidate_k,
         mmr_lambda=settings.mmr_lambda,
+        hybrid=settings.hybrid_search,
+        rrf_k=settings.rrf_k,
+        keyword_weight=settings.keyword_weight,
     )
     agent = RetrievalAgent(retriever=retriever, max_subqueries=settings.max_subqueries)
     answerer = build_answerer(

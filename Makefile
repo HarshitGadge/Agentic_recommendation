@@ -1,4 +1,4 @@
-.PHONY: help install install-baseline dev test lint run ingest bench docker-build docker-up docker-down clean
+.PHONY: help install install-baseline dev test lint run ingest bench eval-data eval docker-build docker-up docker-down clean
 
 PYTHON ?= python3
 VENV   ?= .venv
@@ -22,7 +22,7 @@ test: ## Run the test suite
 	$(BIN)/pytest
 
 lint: ## Lint with ruff
-	$(BIN)/ruff check app bench scripts tests
+	$(BIN)/ruff check app bench eval scripts tests
 
 run: ## Start the API on :8000 with reload
 	$(BIN)/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -38,6 +38,12 @@ demo-docker: ## Same demo, against the container (corpus mounted at /corpus)
 
 bench: ## Run the latency benchmark against $(CORPUS)
 	$(BIN)/python -m bench.benchmark --corpus $(CORPUS)
+
+eval-data: ## Download the BEIR SciFact benchmark (~4.6 MB) into eval/data/
+	$(BIN)/python -m eval.download_scifact
+
+eval: ## Retrieval-quality evaluation (nDCG@10, recall, MRR) on SciFact
+	$(BIN)/python -m eval.retrieval_eval
 
 docker-build: ## Build the container image
 	docker compose build

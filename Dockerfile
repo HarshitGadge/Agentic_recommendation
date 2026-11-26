@@ -36,6 +36,7 @@ WORKDIR /app
 COPY --chown=app:app app/ ./app/
 COPY --chown=app:app scripts/ ./scripts/
 COPY --chown=app:app bench/ ./bench/
+COPY --chown=app:app demo/ ./demo/
 
 RUN mkdir -p /app/data && chown -R app:app /app/data
 USER app
@@ -50,9 +51,16 @@ ENV RAG_CHROMA_PATH=/app/data/chroma \
     RAG_HOST=0.0.0.0 \
     RAG_PORT=8000
 
+# Public demo only: index demo/corpus at build time so the container starts with
+# a ready, read-only index (pair with RAG_ALLOW_INGEST=false). Off by default;
+# render.yaml turns it on. See demo/README.md.
+ARG RAG_DEMO_INDEX=false
+RUN if [ "$RAG_DEMO_INDEX" = "true" ]; then sh demo/build_index.sh; fi
+
 EXPOSE 8000
 
+# Hosting platforms such as Render inject the port to listen on as $PORT.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
-    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status==200 else 1)"
+    CMD python -c "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:%s/health' % os.environ.get('PORT','8000'), timeout=4).status==200 else 1)"
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

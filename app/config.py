@@ -61,6 +61,10 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
     log_level: str = "INFO"
+    # Set to false on a public deployment: /ingest reads server paths and
+    # /ingest/upload accepts arbitrary files, so neither belongs on an open URL.
+    # The index is then whatever was baked in at build time (see Dockerfile).
+    allow_ingest: bool = True
 
     @field_validator("embed_backend")
     @classmethod

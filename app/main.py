@@ -216,8 +216,20 @@ def metrics(state: AppState = Depends(get_state)) -> dict[str, Any]:
 # --------------------------------------------------------------------------
 # Ingestion
 # --------------------------------------------------------------------------
+def require_ingest_enabled(state: AppState = Depends(get_state)) -> AppState:
+    """Refuse writes to the index when the deployment is read-only (RAG_ALLOW_INGEST=false)."""
+    if not state.settings.allow_ingest:
+        raise HTTPException(
+            status_code=403,
+            detail="Ingestion is disabled on this deployment (read-only demo index).",
+        )
+    return state
+
+
 @app.post("/ingest", response_model=IngestResponse, tags=["ingest"])
-def ingest(body: IngestRequest, state: AppState = Depends(get_state)) -> IngestResponse:
+def ingest(
+    body: IngestRequest, state: AppState = Depends(require_ingest_enabled)
+) -> IngestResponse:
     """Ingest a file or directory already present on the server's filesystem."""
     try:
         result = ingest_path(
@@ -239,7 +251,7 @@ def ingest(body: IngestRequest, state: AppState = Depends(get_state)) -> IngestR
 async def ingest_upload(
     files: list[UploadFile] = File(...),
     source_tag: str | None = None,
-    state: AppState = Depends(get_state),
+    state: AppState = Depends(require_ingest_enabled),
 ) -> IngestResponse:
     """Ingest uploaded files without needing filesystem access on the server."""
     staging = Path(tempfile.mkdtemp(prefix="rag-upload-"))

@@ -138,6 +138,29 @@ def test_upload_strips_directory_traversal(client):
 # --------------------------------------------------------------------------
 # Query
 # --------------------------------------------------------------------------
+def test_read_only_deployment_refuses_ingest(client):
+    client.app.state.rag.settings.allow_ingest = False
+    response = client.post("/ingest", json={"path": client.corpus_path})
+    assert response.status_code == 403
+    assert "disabled" in response.json()["detail"]
+    assert client.get("/stats").json()["chunk_count"] == 0
+
+
+def test_read_only_deployment_refuses_uploads(client):
+    client.app.state.rag.settings.allow_ingest = False
+    response = client.post("/ingest/upload", files=_upload("x.txt", b"should not be indexed"))
+    assert response.status_code == 403
+    assert client.get("/stats").json()["chunk_count"] == 0
+
+
+def test_read_only_deployment_still_answers_queries(client):
+    client.post("/ingest", json={"path": client.corpus_path})
+    client.app.state.rag.settings.allow_ingest = False
+    response = client.post("/query", json={"question": "Where does the Calvin cycle happen?"})
+    assert response.status_code == 200
+    assert response.json()["citations"]
+
+
 def test_query_returns_answer_and_citations(client):
     client.post("/ingest", json={"path": client.corpus_path})
     response = client.post("/query", json={"question": "How does photosynthesis work?"})

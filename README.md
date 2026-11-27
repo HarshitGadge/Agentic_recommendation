@@ -2,6 +2,8 @@
 
 [![tests](https://github.com/HarshitGadge/agentic-rag-service/actions/workflows/tests.yml/badge.svg)](https://github.com/HarshitGadge/agentic-rag-service/actions/workflows/tests.yml)
 
+**Live demo:** [agentic-rag-service-fxsc.onrender.com/docs](https://agentic-rag-service-fxsc.onrender.com/docs). It's a read-only portfolio Q&A over five of my projects' design docs; see [`demo/README.md`](demo/README.md). On the free instance, the first request after a quiet spell takes about a minute.
+
 A retrieval-augmented generation service you can point at a folder of documents
 and query over HTTP. LangChain does the chunking, ChromaDB stores and searches
 the vectors, an optional BM25 keyword index adds hybrid search, an adaptive

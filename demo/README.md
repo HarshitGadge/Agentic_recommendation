@@ -15,7 +15,7 @@ tag each:
 Questions worth trying:
 
 ```bash
-URL=https://<your-render-url>
+URL=https://agentic-rag-service-fxsc.onrender.com
 
 curl -s $URL/query -H 'content-type: application/json' \
   -d '{"question": "How does the payments pipeline stop a replayed Kafka event from moving the table backwards?"}' | jq .answer
@@ -27,7 +27,7 @@ curl -s $URL/query -H 'content-type: application/json' \
   -d '{"question": "How are hospital readmissions defined and how are transfers handled?"}' | jq .citations
 ```
 
-Or open `/docs` on the deployment and use **Try it out**.
+Or open [the interactive API docs](https://agentic-rag-service-fxsc.onrender.com/docs) and use **Try it out**.
 
 ## How the deployment differs from a local run
 

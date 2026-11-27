@@ -1,6 +1,6 @@
 # Agentic RAG Service
 
-[![tests](https://github.com/HarshitGadge/Agentic_recommendation/actions/workflows/tests.yml/badge.svg)](https://github.com/HarshitGadge/Agentic_recommendation/actions/workflows/tests.yml)
+[![tests](https://github.com/HarshitGadge/agentic-rag-service/actions/workflows/tests.yml/badge.svg)](https://github.com/HarshitGadge/agentic-rag-service/actions/workflows/tests.yml)
 
 A retrieval-augmented generation service you can point at a folder of documents
 and query over HTTP. LangChain does the chunking, ChromaDB stores and searches
@@ -112,7 +112,7 @@ instead of anecdotal.
 ## Quickstart
 
 ```bash
-git clone https://github.com/HarshitGadge/Agentic_recommendation.git agentic-rag
+git clone https://github.com/HarshitGadge/agentic-rag-service.git agentic-rag
 cd agentic-rag
 
 make install          # venv + dependencies

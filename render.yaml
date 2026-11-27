@@ -1,0 +1,21 @@
+# Render Blueprint for the public, read-only demo (see demo/README.md).
+services:
+  - type: web
+    name: agentic-rag-service
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Render passes these to the Docker build as build args as well.
+      - key: RAG_DEMO_INDEX
+        value: "true"
+      - key: RAG_ALLOW_INGEST
+        value: "false"
+      - key: RAG_LOG_LEVEL
+        value: INFO
+      # Smaller batches keep peak memory inside the free plan's 512 MB.
+      - key: RAG_EMBED_BATCH_SIZE
+        value: "16"

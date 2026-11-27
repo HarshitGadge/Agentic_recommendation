@@ -65,6 +65,10 @@ class Settings(BaseSettings):
     # /ingest/upload accepts arbitrary files, so neither belongs on an open URL.
     # The index is then whatever was baked in at build time (see Dockerfile).
     allow_ingest: bool = True
+    # Browser origins allowed to call the API (CORS), e.g. a chat page on GitHub
+    # Pages. JSON list in the env var: RAG_CORS_ORIGINS='["https://you.github.io"]'.
+    # Empty means no cross-origin access, which is the safe default.
+    cors_origins: list[str] = []
 
     @field_validator("embed_backend")
     @classmethod

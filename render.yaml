@@ -14,6 +14,9 @@ services:
         value: "true"
       - key: RAG_ALLOW_INGEST
         value: "false"
+      # The chat page at harshitgadge.github.io calls /query from the browser.
+      - key: RAG_CORS_ORIGINS
+        value: '["https://harshitgadge.github.io"]'
       - key: RAG_LOG_LEVEL
         value: INFO
       # Smaller batches keep peak memory inside the free plan's 512 MB.

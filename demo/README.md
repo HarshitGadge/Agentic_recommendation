@@ -1,7 +1,7 @@
 # Live demo: portfolio Q&A
 
 The public deployment of this service answers questions about my own projects.
-Its index holds the READMEs and design notes of five repositories, one source
+Its index holds the READMEs and design notes of six repositories, one source
 tag each:
 
 | `source_filter`             | Project |
@@ -11,6 +11,7 @@ tag each:
 | `payments-data-platform`    | Debezium CDC → Spark → Iceberg lakehouse, FX warehouse in dbt |
 | `kafka-databricks-nasa`     | NASA GCN Kafka stream → Databricks medallion lakehouse |
 | `medicare-claims-analytics` | dbt + DuckDB claims pipeline, readmissions, high-cost model |
+| `ragbench`                  | RAG retrieval evaluation harness: BEIR, nDCG@10, bootstrap CIs |
 
 Questions worth trying:
 
@@ -25,6 +26,9 @@ curl -s $URL/query -H 'content-type: application/json' \
 
 curl -s $URL/query -H 'content-type: application/json' \
   -d '{"question": "How are hospital readmissions defined and how are transfers handled?"}' | jq .citations
+
+curl -s $URL/query -H 'content-type: application/json' \
+  -d '{"question": "How much better is dense retrieval than BM25 on ArguAna?", "source_filter": "ragbench"}' | jq .answer
 ```
 
 Or open [the interactive API docs](https://agentic-rag-service-fxsc.onrender.com/docs) and use **Try it out**.

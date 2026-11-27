@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from app import __version__
@@ -126,6 +127,18 @@ app = FastAPI(
     ),
     lifespan=lifespan,
 )
+
+_cors_origins = get_settings().cors_origins
+if _cors_origins:
+    # Read-only browser access for the configured origins: queries and stats,
+    # never ingestion (which RAG_ALLOW_INGEST=false refuses anyway).
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_methods=["GET", "POST"],
+        allow_headers=["content-type"],
+        max_age=600,
+    )
 
 
 def get_state(request: Request) -> AppState:
